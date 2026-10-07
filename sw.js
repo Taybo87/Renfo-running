@@ -1,0 +1,5 @@
+const CACHE='rr-v5-4-0';
+const ASSETS=['./','./index.html','./app.js','./manifest.webmanifest','./icon-192.png','./icon-512.png','./images/exercises/squat.png','./images/exercises/front-squat.png','./images/exercises/rdl.png','./images/exercises/souleve-de-terre.png','./images/exercises/hip-thrust.png','./images/exercises/glute-bridge.png','./images/exercises/fentes-avant.png','./images/exercises/bulgarian-split-squat.png','./images/exercises/step-up.png','./images/exercises/mollets-debout.png','./images/exercises/mollets-assis.png','./images/exercises/clamshell.png','./images/exercises/planche-laterale.png','./images/exercises/planche.png','./images/exercises/dead-bug.png','./images/exercises/bird-dog.png'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
