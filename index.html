@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>Renfo Running</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#6b7280;--accent:#2563eb;--ok:#16a34a;--border:#e5e7eb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:#111827;color:white;padding:22px 18px 18px;position:sticky;top:0;z-index:5}
+h1{font-size:24px;margin:0 0 4px}header p{margin:0;color:#cbd5e1;font-size:14px}
+main{max-width:700px;margin:auto;padding:16px 14px 90px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;justify-content:center;z-index:10}
+nav button{border:0;background:none;padding:12px 10px;font-size:12px;color:var(--muted);flex:1;max-width:140px}
+nav button.active{color:var(--accent);font-weight:700}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 8px #00000008}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:center}.muted{color:var(--muted);font-size:13px}
+button,.btn{border:0;border-radius:11px;padding:11px 14px;background:var(--accent);color:white;font-weight:700}
+button.secondary{background:#eef2ff;color:#1e40af}button.green{background:var(--ok)}
+button.danger{background:#fee2e2;color:#991b1b}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;font:inherit;background:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.exercise{border-top:1px solid var(--border);padding:14px 0}.exercise:first-child{border-top:0}
+.sets{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.set{background:#f1f5f9;color:#334155;padding:8px 10px;border-radius:9px;font-size:13px}.set.done{background:#dcfce7;color:#166534;text-decoration:line-through}
+.big{font-size:30px;font-weight:800}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:700}
+.hidden{display:none}.empty{text-align:center;color:var(--muted);padding:30px 10px}
+h2{font-size:19px;margin:6px 0 12px}h3{font-size:16px;margin:0 0 5px}
+.progress{height:9px;background:#e5e7eb;border-radius:99px;overflow:hidden}.progress>div{height:100%;background:var(--accent)}
+</style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Renfo Running">
+<link rel="icon" href="icons/icon-192.png">
+
+</head>
+<body>
+<header><h1>Renfo Running</h1><p id="subtitle">Ton suivi de renforcement</p></header>
+<main>
+<section id="home">
+<h2>Prochaine séance</h2>
+<div class="card">
+<div class="row"><div><span class="pill">Séance A</span><h3 style="margin-top:9px">Force & stabilité</h3></div><button onclick="startWorkout()">Commencer</button></div>
+<p class="muted">Squat · Hip thrust · RDL · Mollets · Clamshell</p>
+</div>
+<h2>État du jour</h2>
+<div class="card grid">
+<div><div class="muted">Douleur pied</div><div class="big" id="homeFoot">—</div></div>
+<div><div class="muted">Fatigue</div><div class="big" id="homeFatigue">—</div></div>
+</div>
+<div class="card"><div class="row"><div><h3>Dernière séance</h3><span class="muted" id="lastWorkout">Aucune séance enregistrée</span></div><span id="lastVolume" class="pill">—</span></div></div>
+</section>
+
+<section id="workout" class="hidden">
+<div class="row"><div><h2>Séance A</h2><span class="muted">Coche chaque série après l'avoir réalisée.</span></div><button class="secondary" onclick="finishWorkout()">Terminer</button></div>
+<div id="exerciseList"></div>
+<div class="card">
+<h3>Ressenti</h3><div class="grid">
+<label class="muted">Douleur pied /10<input id="foot" type="number" min="0" max="10" value="0"></label>
+<label class="muted">Douleur cheville /10<input id="ankle" type="number" min="0" max="10" value="0"></label>
+<label class="muted">Douleur hanche /10<input id="hip" type="number" min="0" max="10" value="0"></label>
+<label class="muted">Fatigue /10<input id="fatigue" type="number" min="0" max="10" value="0"></label>
+</div>
+<label class="muted" style="display:block;margin-top:10px">Commentaire<textarea id="note" rows="3" placeholder="Ex. jambes lourdes, RDL facile..."></textarea></label>
+</div>
+<div class="card">
+<h3>🤖 Analyse de séance</h3>
+<p class="muted">Après avoir terminé, génère un résumé prêt à m'envoyer dans ChatGPT.</p>
+<div class="grid">
+<button class="green" onclick="generateSummary()">Générer le résumé</button>
+<button class="secondary" onclick="shareSummary()">📤 Partager</button>
+</div>
+<textarea id="summary" rows="12" style="margin-top:10px" placeholder="Ton résumé apparaîtra ici..." readonly></textarea>
+<button class="secondary" style="width:100%;margin-top:8px" onclick="copySummary()">📋 Copier le résumé</button>
+</div>
+</section>
+
+<section id="history" class="hidden">
+<h2>Historique</h2><div id="historyList"></div>
+</section>
+
+<section id="progress" class="hidden">
+<h2>Progression</h2><div id="progressList"></div>
+</section>
+</main>
+<nav>
+<button class="active" onclick="show('home',this)">🏠<br>Accueil</button>
+<button onclick="show('workout',this);startWorkout()">🏋️<br>Séance</button>
+<button onclick="show('history',this);renderHistory()">📋<br>Historique</button>
+<button onclick="show('progress',this);renderProgress()">📈<br>Progression</button>
+</nav>
+<script>
+const exercises=[
+ {name:"Squat",sets:3,reps:6,weight:60},
+ {name:"Hip thrust",sets:3,reps:10,weight:50},
+ {name:"RDL",sets:3,reps:8,weight:46},
+ {name:"Montées de mollets",sets:3,reps:12,weight:20},
+ {name:"Clamshell",sets:3,reps:15,weight:0}
+];
+let current=[];
+function data(){return JSON.parse(localStorage.getItem('renfo')||'[]')}
+function save(d){localStorage.setItem('renfo',JSON.stringify(d))}
+function show(id,btn){
+ document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));
+ document.getElementById(id).classList.remove('hidden');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+ if(btn)btn.classList.add('active');
+}
+function startWorkout(){
+ current=exercises.map(e=>({...e,done:Array(e.sets).fill(false)}));
+ renderExercises(); show('workout',document.querySelectorAll('nav button')[1]);
+}
+function renderExercises(){
+ const el=document.getElementById('exerciseList');el.innerHTML='';
+ current.forEach((e,i)=>{
+  const d=document.createElement('div');d.className='card exercise';
+  d.innerHTML=`<div class="row"><div><h3>${e.name}</h3><span class="muted">${e.sets} × ${e.reps}${e.weight?' · '+e.weight+' kg':''}</span></div>
+  <button class="secondary" onclick="changeWeight(${i})">Charge</button></div>
+  <div class="sets">${e.done.map((x,j)=>`<button class="set ${x?'done':''}" onclick="toggleSet(${i},${j})">Série ${j+1}</button>`).join('')}</div>`;
+  el.appendChild(d);
+ });
+}
+function toggleSet(i,j){current[i].done[j]=!current[i].done[j];renderExercises()}
+function changeWeight(i){let w=prompt('Nouvelle charge (kg)',current[i].weight||0);if(w!==null&&!isNaN(w)){current[i].weight=Number(w);renderExercises()}}
+function finishWorkout(){
+ const completed=current.reduce((a,e)=>a+e.done.filter(Boolean).length,0);
+ const total=current.reduce((a,e)=>a+e.sets,0);
+ if(!completed){alert('Coche au moins une série avant de terminer.');return}
+ const d=data();d.unshift({date:new Date().toISOString(),completed,total,foot:+document.getElementById('foot').value||0,fatigue:+document.getElementById('fatigue').value||0,note:document.getElementById('note').value,exercises:current.map(e=>({name:e.name,weight:e.weight,reps:e.reps,setsDone:e.done.filter(Boolean).length}))});
+ save(d);alert(`Séance enregistrée : ${completed}/${total} séries.`);show('home',document.querySelectorAll('nav button')[0]);updateHome();
+}
+function renderHistory(){
+ const d=data(),el=document.getElementById('historyList');
+ if(!d.length){el.innerHTML='<div class="empty">Aucune séance pour le moment.</div>';return}
+ el.innerHTML=d.map(x=>`<div class="card"><div class="row"><b>${new Date(x.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'})}</b><span class="pill">${x.completed}/${x.total} séries</span></div>
+ <p class="muted">Pied : ${x.foot}/10 · Fatigue : ${x.fatigue}/10</p>${x.note?`<p>${escapeHtml(x.note)}</p>`:''}</div>`).join('');
+}
+function renderProgress(){
+ const d=data(),el=document.getElementById('progressList');
+ if(!d.length){el.innerHTML='<div class="empty">Fais quelques séances pour voir ta progression.</div>';return}
+ el.innerHTML=exercises.map(ex=>{
+  const vals=d.flatMap(s=>s.exercises.filter(e=>e.name===ex.name).map(e=>e.weight)).filter(v=>v>0);
+  const max=vals.length?Math.max(...vals):0;
+  return `<div class="card"><div class="row"><h3>${ex.name}</h3><b>${max?max+' kg':'au poids du corps'}</b></div><p class="muted">Meilleure charge enregistrée</p><div class="progress"><div style="width:${max?Math.min(100,max/(ex.weight||60)*100):0}%"></div></div></div>`;
+ }).join('');
+}
+function buildSummary(){
+ const completed=current.reduce((a,e)=>a+e.done.filter(Boolean).length,0);
+ const total=current.reduce((a,e)=>a+e.sets,0);
+ const date=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'});
+ let lines=[`🏋️ SÉANCE A — ${date}`,``,`${completed}/${total} séries réalisées`,``,...current.map(e=>{
+   const done=e.done.filter(Boolean).length;
+   return `${e.name} : ${done}/${e.sets} séries × ${e.reps}${e.weight?' @ '+e.weight+' kg':''}`;
+ })];
+ lines.push(
+   ``,
+   `🦶 Douleur pied : ${document.getElementById('foot').value||0}/10`,
+   `🦵 Douleur cheville : ${document.getElementById('ankle').value||0}/10`,
+   `🦵 Douleur hanche : ${document.getElementById('hip').value||0}/10`,
+   `😴 Fatigue : ${document.getElementById('fatigue').value||0}/10`,
+   ``,
+   `📝 Commentaire : ${document.getElementById('note').value.trim()||'Aucun'}`
+ );
+ return lines.join('\n');
+}
+function generateSummary(){
+ const s=buildSummary();
+ document.getElementById('summary').value=s;
+ return s;
+}
+async function copySummary(){
+ const s=document.getElementById('summary').value||generateSummary();
+ try{await navigator.clipboard.writeText(s);alert('Résumé copié. Tu peux le coller directement dans ChatGPT.')}
+ catch(e){document.getElementById('summary').select();document.execCommand('copy');alert('Résumé copié.')}
+}
+async function shareSummary(){
+ const s=document.getElementById('summary').value||generateSummary();
+ if(navigator.share){
+   try{await navigator.share({title:'Analyse de ma séance de renforcement',text:s});}catch(e){}
+ }else{
+   await copySummary();
+ }
+}
+function updateHome(){
+ const d=data()[0];document.getElementById('homeFoot').textContent=d?d.foot+'/10':'—';document.getElementById('homeFatigue').textContent=d?d.fatigue+'/10':'—';document.getElementById('lastWorkout').textContent=d?new Date(d.date).toLocaleString('fr-FR'):'Aucune séance enregistrée';document.getElementById('lastVolume').textContent=d?d.completed+'/'+d.total+' séries':'—';
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+updateHome();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
